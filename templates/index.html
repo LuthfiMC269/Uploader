@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Image Uploader</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800 min-h-screen flex items-center justify-center px-4">
+  <div class="w-full max-w-xl p-8 bg-white shadow-xl rounded-xl">
+    <h1 class="text-3xl font-bold text-center mb-6">Upload Gambar</h1>
+
+    <form id="uploadForm" method="post" enctype="multipart/form-data" class="space-y-4">
+      <div
+        id="dropzone"
+        class="border-4 border-dashed border-blue-300 p-6 rounded-lg text-center cursor-pointer bg-blue-50 hover:bg-blue-100 transition"
+      >
+        <p class="text-blue-600 font-semibold">Klik di sini atau drag & drop gambar/dokumen</p>
+        <input type="file" name="image" id="fileInput" accept="image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" class="hidden" required />
+      </div>
+
+      <div id="preview" class="hidden mt-2">
+        <img src="" alt="Preview" class="w-32 h-32 object-cover mx-auto rounded" />
+      </div>
+
+      <div class="w-full bg-gray-200 rounded-full h-2.5">
+        <div id="progressBar" class="bg-blue-500 h-2.5 rounded-full w-0 transition-all duration-300 ease-in-out"></div>
+      </div>
+
+      <button
+        type="submit"
+        id="submitBtn"
+        class="w-full py-3 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700 transition"
+      >
+        Upload
+      </button>
+    </form>
+
+    <div id="result" class="mt-6 hidden text-center">
+      <p class="text-green-600 font-semibold mb-2">Berhasil di-upload!</p>
+      <a id="imageLink" href="" class="text-blue-600 underline break-all block mb-4" target="_blank"></a>
+
+      <button
+        id="refreshBtn"
+        class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 transition"
+      >
+        Upload Lagi
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const dropzone = document.getElementById("dropzone");
+    const fileInput = document.getElementById("fileInput");
+    const form = document.getElementById("uploadForm");
+    const preview = document.getElementById("preview");
+    const image = preview.querySelector("img");
+    const progressBar = document.getElementById("progressBar");
+    const result = document.getElementById("result");
+    const imageLink = document.getElementById("imageLink");
+    const submitBtn = document.getElementById("submitBtn");
+
+    dropzone.addEventListener("click", () => fileInput.click());
+
+    dropzone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropzone.classList.add("bg-blue-100");
+    });
+
+    dropzone.addEventListener("dragleave", () => {
+      dropzone.classList.remove("bg-blue-100");
+    });
+
+    dropzone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropzone.classList.remove("bg-blue-100");
+      fileInput.files = e.dataTransfer.files;
+      showPreview(fileInput.files[0]);
+    });
+
+    fileInput.addEventListener("change", () => {
+      showPreview(fileInput.files[0]);
+    });
+
+    function showPreview(file) {
+      if (file && file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          image.src = reader.result;
+          preview.classList.remove("hidden");
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const formData = new FormData(form);
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", "/", true);
+      xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+
+      xhr.upload.onprogress = function (e) {
+        if (e.lengthComputable) {
+          const percent = (e.loaded / e.total) * 100;
+          progressBar.style.width = percent + "%";
+        }
+      };
+
+      xhr.onload = function () {
+        if (xhr.status === 200) {
+          const res = JSON.parse(xhr.responseText);
+          if (res.url) {
+            imageLink.href = res.url;
+            imageLink.textContent = res.url;
+            result.classList.remove("hidden");
+            progressBar.style.width = "100%";
+
+            // ❌ Sembunyikan form input agar tidak bisa spam upload
+            submitBtn.classList.add("hidden");
+            dropzone.classList.add("hidden");
+          } else {
+            alert("Upload gagal.");
+          }
+        } else {
+          alert("Terjadi kesalahan saat upload.");
+        }
+      };
+
+      xhr.send(formData);
+    });
+
+    document.getElementById("refreshBtn").addEventListener("click", () => {
+  // Kosongkan input file
+  fileInput.value = "";
+
+  // Reset UI secara manual
+  preview.classList.add("hidden");
+  progressBar.style.width = "0%";
+  image.src = "";
+  imageLink.href = "";
+  imageLink.textContent = "";
+  result.classList.add("hidden");
+  dropzone.classList.remove("hidden");
+  submitBtn.classList.remove("hidden");
+});
+
+  </script>
+</body>
+</html>
