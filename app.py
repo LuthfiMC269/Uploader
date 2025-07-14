@@ -5,7 +5,7 @@ import uuid
 import time
 from datetime import datetime, timedelta
 
-UPLOAD_FOLDER = 'static/uploads'
+UPLOAD_FOLDER = os.path.join(os.getcwd(), "static", "uploads")
 EXPIRATION_TIME = 3 * 60 * 60  # 3 jam
 ALLOWED_EXTENSIONS = {
     'jpg', 'jpeg', 'png', 'gif', 'bmp',       # Gambar
